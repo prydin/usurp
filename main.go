@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -75,7 +76,7 @@ func (d *dumpingHandler) runDumper(filename string) {
 	}
 	defer f.Close()
 	for dd := range d.dump {
-		writeStr(f, fmt.Sprintf("%s %s", dd.rq.Method, dd.rq.URL.Path))
+		writeStr(f, dd.rq.Method + " " + dd.rq.URL.Path)
 		writeStr(f, "\n")
 		for k, vv := range dd.rq.Header {
 			for _, v := range vv {
@@ -123,5 +124,13 @@ func serve(port int, targetHost, filename string) {
 }
 
 func main() {
-	serve(9411, "google.com:80", "dump.out")
+	targetPtr := flag.String("target", "", "The target to send traffic to as hostname:port")
+	filePtr := flag.String("file", "", "The file to dump to")
+	portPtr := flag.Int("port", 80, "The port to listen to")
+	flag.Parse()
+	if *targetPtr == "" || *filePtr == "" {
+		fmt.Fprintf(os.Stderr,"Both -file and -target must be specified\n")
+		os.Exit(1)
+	}
+	serve(*portPtr, *targetPtr, *filePtr)
 }
